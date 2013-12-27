@@ -1,0 +1,8 @@
+*~
+*.bak
+*.o
+performance_items.h
+clumping_tree
+clumping_tree_async
+density_pdf
+fof_only

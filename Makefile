@@ -7,7 +7,7 @@ OPENMP    = -openmp
 OPTIONS   = $(OPTIMIZE) -I$(MYLIB) $(OPENMP)
 VPATH     =  $(MYLIB)
 
-EXEC      = clumping_tree clumping_tree_async density_pdf fof_only
+EXEC      = clumping_tree #clumping_tree_async density_pdf fof_only
 
 OBJS     := option.o
 OBJS     += basic_types.o mpi_interface.o

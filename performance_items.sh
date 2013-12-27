@@ -6,29 +6,30 @@
 # The list always start from etc and end with last
 #
 
+echo='/bin/echo'
 
 items=`cat performance_items.txt`
 
-echo '//'
-echo '// This is generated automatically.'
-echo '// Edit performance_items.txt, not this file.'
-echo '//'
-echo '#ifndef PERFORMANCE_ITEMS_H'
-echo '#define PERFORMANCE_ITEMS_H'
-echo -n 'enum performance_item {etc, '
+$echo '//'
+$echo '// This is generated automatically.'
+$echo '// Edit performance_items.txt, not this file.'
+$echo '//'
+$echo '#ifndef PERFORMANCE_ITEMS_H'
+$echo '#define PERFORMANCE_ITEMS_H'
+$echo -n 'enum performance_item {etc, '
 
 for item in $items
 do
-  echo $item | awk '{printf("%s, ", $1)}'
+  $echo $item | awk '{printf("%s, ", $1)}'
 done
-echo "last};"
+$echo "last};"
 
-echo -n 'static const char* performance_name[]= {"etc", '
+$echo -n 'static const char* performance_name[]= {"etc", '
 for item in $items
 do
-  echo $item | awk '{printf("\"%s\", ", $1)}'
+  $echo $item | awk '{printf("\"%s\", ", $1)}'
 done
 
-echo '"last"};'
-echo '#endif'
+$echo '"last"};'
+$echo '#endif'
 
