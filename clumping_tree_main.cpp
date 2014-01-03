@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include <deque>
 #include <mpi.h>

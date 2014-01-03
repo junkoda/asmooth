@@ -1,3 +1,4 @@
+#include <cstring>
 #include "open.h"
 
 using namespace std;
