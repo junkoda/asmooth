@@ -284,12 +284,7 @@ void for_each_readshift(const char redshift[],
     cout << "shift(1) " << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
   }
   
-  //string pm_redshift= op["-pm_redshift"];
-  //if(!pm_redshift.empty()) {    
-  sprintf(filename, "%s/%sxv%d.dat", 
-	  particle_dir, redshift, mpi->index());
-    	    //op["-pdir"].c_str(), pm_redshift.c_str(), mpi->rank());
-    //	    op["-pdir"].c_str(), pm_redshift.c_str(), 0); // debug
+  sprintf(filename, "%s/%sxv%d.dat", particle_dir, redshift, mpi->index());
 
   read_pm_file2(filename, particles, shift);
 
@@ -321,13 +316,13 @@ void for_each_readshift(const char redshift[],
   //
   mpi->print("constructing kdtree\n");
   logger.begin_timer(construction);
-  //KDTree* tree= new KDTreeBalanced();
   const index_t nnode= tree->construct(particles, 
 				 -buffer_factor*boxsize, 
 				 (1.0f+buffer_factor)*boxsize);
   logger << "nnode " << nnode << "\n";
 
 
+#ifdef FOFON
   //
   // FOF
   //
@@ -341,20 +336,18 @@ void for_each_readshift(const char redshift[],
   
   sprintf(filename, "fof_halos/%sfof%d.dat", redshift, mpi->index());
   write_fof_halos(filename, particles, temp_buffer, nhalo);
+#endif
 
   //
   // Neighbor Search
   //
   
-  //const int k_nbr= 32;
   mpi->print("neighbor search\n");
   logger.begin_timer(neighbors);
   KNeighbors knbrs;
-  //set_nbr_search(tree->root(), particles->particle);
   
   Particle* const p= particles->particle;
   const index_t np= particles->np_with_buffers;
-  //  int count= 0;
 
 #ifdef _OPENMP
 #pragma omp parallel for private(knbrs)
@@ -364,6 +357,7 @@ void for_each_readshift(const char redshift[],
   }
 
 
+#ifdef FOFON
   //
   // Mesh (FOF)
   //
@@ -379,13 +373,10 @@ void for_each_readshift(const char redshift[],
     sprintf(filename, "fof/nc%d/%s", nc, redshift);
     write_mesh_separate(filename, mpi->index(), mesh, nc, boxsize);
   }
-  //
-  //sprintf(filename, "fof/%smesh%d.dat", redshift, mpi->index());
-  //write_mesh(filename, mesh, nc, boxsize);
-
-  //logger.begin_timer(imbalance);
   MPI_Barrier(MPI_COMM_WORLD);
+#endif
 
+#ifdef HALO_EXCISE
   //
   // Spherical Overdensity Halo
   //
@@ -406,18 +397,12 @@ void for_each_readshift(const char redshift[],
 #pragma omp parallel for reduction(+:np_halo, m_halo) shared(h)
 #endif
   for(index_t i=0; i<n_sohalo; ++i) {
-    //cerr << "rhalo " << h[i].r << endl;
     if(left < h[i].x[0] && h[i].x[0] < right &&
        left < h[i].x[1] && h[i].x[1] < right &&
        left < h[i].x[2] && h[i].x[2] < right) {
       int nph= mark_halo_particles(tree->root(), h[i].x, h[i].r);
       np_halo += nph;
       m_halo += h[i].mass/8.0f;
-      /*
-      if(mpi->index() == 0) // debug!!!
-	printf("hdebug %e %e %e %e %d\n", h[i].x[0], h[i].x[1], h[i].x[2], 
-	       h[i].mass/8.0f, nph);
-      */
     }
   }
 
@@ -446,16 +431,10 @@ void for_each_readshift(const char redshift[],
 	     np_halo_total/m_halo_total < 1.20);
     }
   }
+#else
+  logger << "haloes not excised\n";
+#endif
 
-  // debug !
-  /*
-  np_halo= 0;
-  for(index_t i=0; i<np; ++i)
-    np_halo += (particles->particle[i].igrp == -1);
-
-  logger << "n_so_halo_local " << halos->np_local << "\n";
-  logger << "np_so_halo " << np_halo << " (with buffers) \n";
-  */
 
   //  
   // Mesh Assignment (SO)
@@ -474,34 +453,7 @@ void for_each_readshift(const char redshift[],
     sprintf(filename, "so/nc%d/%s", nc, redshift);
     write_mesh_separate(filename, mpi->index(), mesh, nc, boxsize);
   }
-  //assign_on_global_mesh(particles, mpi, mesh, nc, -1);
-  //write_mesh("sog/mesh.dat", mesh, nc, boxsize);
 
-
-
-
-  //
-  // Debug! (test using finemesh)
-  //
-  /*
-  logger.begin_timer(test);
-  const int ncf= op.get_int("-ncf");
-  if(ncf > 0) {
-    const int nfmesh= ncf*ncf*ncf;
-    float* finemesh= (float*) malloc(sizeof(float)*nfmesh);
-    assign_on_density_mesh(particles, finemesh, ncf, -1);
-    double nf2= 0.0;
-    float vf_inv= 1.0*nfmesh/(boxsize*boxsize*boxsize);
-    for(int i=0; i<nfmesh; ++i) {
-      float n= finemesh[i]*vf_inv;
-      nf2 += n*n;
-    }
-    
-    logger << "nf2 " << ncf << " " << nf2/nfmesh*64.0 << endl;
-  }
-  */
-  // nbar= 1/8.0; 1/nbar^2= 64.0
-  
   //
   // Done
   //

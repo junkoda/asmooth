@@ -1,13 +1,16 @@
+#
+# A code for adaptively-smoothed density, velocity, and clumping fields
+#
 
+EXEC      = clumping_tree #clumping_tree_async density_pdf fof_only
 
-#CXX      =  $(MPICXX)
 MPICXX   ?= mpicxx
 OPTIMIZE ?=  -O2
 OPENMP    = -openmp
-OPTIONS   = $(OPTIMIZE) -I$(MYLIB) $(OPENMP)
-VPATH     =  $(MYLIB)
+OPTIONS   := $(OPTIMIZE) -I$(MYLIB) $(OPENMP)
 
-EXEC      = clumping_tree #clumping_tree_async density_pdf fof_only
+OPTIONS  += HALO_EXCISE # Excise halo using given halo catalog
+# OPTIONS  += FOFON  # Do also Friends-of-friends halo finding/excising
 
 OBJS     := option.o
 OBJS     += basic_types.o mpi_interface.o
