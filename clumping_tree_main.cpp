@@ -6,7 +6,7 @@
 #include "logger.h"
 #include "basic_types.h"
 #include "mpi_interface.h"
-#include "file_reader.h"
+#include "file_reader2.h"
 #include "exchange_buffer.h"
 #include "kdtree_balanced.h"
 #include "nbr_search.h"
@@ -17,7 +17,7 @@
 
 using namespace std;
 
-void for_each_readshift(const char redshift[],
+static void for_each_readshift(const char redshift[],
 			const char particle_dir[],
 			const char halo_dir[],
 			MpiInterface const * const mpi,
@@ -25,17 +25,18 @@ void for_each_readshift(const char redshift[],
 			Particles* const particles,
 			ParticleSet<Halo>* halos,
 			const float buffer_factor,
+			const int nc_node_dim, const int mesh_scale,
 			const float ll,
 			KDTree* const tree,
 			int* const temp_buffer,
 			float* const mesh,
 			deque<int>& ncs);
 
-int remove_extra_particles(Particles* const particles, const float buffer_factor);
+static int remove_extra_particles(Particles* const particles, const float buffer_factor);
 
-void check_total_mass(const float mesh[], const int nc, const long np_total, const int mpi_rank);
+static void check_total_mass(const float mesh[], const int nc, const long np_total, const int mpi_rank);
 
-char* pop_num(char* const p, int* const n)
+static char* pop_num(char* const p, int* const n)
 {
   char* q= strchr(p, ',');
   if(q != 0)
@@ -62,6 +63,8 @@ int main(int argc, char* argv[])
 	 << "\t-allocate <MB for particles>\n"
 	 << "\t-boxsize <boxsize>\n"
 	 << "\t-buffer_factor 0.05\n"
+         << "\t-nc_node_dim 32\n"
+	 << "\t-mesh_scale 4\n"
          << "\t-l 0.2; FOF linking length"
          << "\t-nc <nc1,nc2,...> list of number of mesh";
     
@@ -84,22 +87,31 @@ int main(int argc, char* argv[])
   op.set_default("-allocate", "512"); // 12M particles ~ 512MB
   op.set_default("-boxsize", "-1");
   op.set_default("-buffer_factor", "0.05");
+  op.set_default("-nc_node_dim", "0");
   op.set_default("-l", "0.2");
   op.set_default("-nc", "256");       // nc^3 is number of mesh in this node
-  //op.set_default("-full", "1");       // shift halo coordinate
   op.set_default("-ncf", "0"); // finemesh clumping
+  op.set_default("-mesh_scale", "4");
 
   const float boxsize= op.get_float("-boxsize");
   assert(boxsize > 0.0f);
   const float buffer_factor= op.get_float("-buffer_factor");
+  const int nc_node_dim= op.get_int("-nc_node_dim");
+  const int mesh_scale= op.get_int("-mesh_scale");
+  
   assert(buffer_factor > 0.0f);
   //const int nc= op.get_int("-nc");
-  //const bool full_box= 0; //op.get_int("-full");
   const float ll= 2.0f * op.get_float("-l");
 
   logger << "boxsize " << boxsize << "\n";
   logger << "buffer_factor " << buffer_factor << "\n";
+  logger << "nc_node_dim " << nc_node_dim << "\n";
+  logger << "mesh_scale " << mesh_scale << "\n";
   logger << "linking_length(internal) " << ll << "\n";
+
+  if(nc_node_dim <= 0) {
+    mpi->abort("Error: option -nc_node_dim not given");
+  }
   
   // nc list
   char nc_arg[128];
@@ -196,6 +208,7 @@ int main(int argc, char* argv[])
 		       particles,
 		       halos,
 		       buffer_factor,
+		       nc_node_dim, mesh_scale,
 		       ll,
 		       tree,
 		       temp,
@@ -237,13 +250,14 @@ int main(int argc, char* argv[])
 
 
 void for_each_readshift(const char redshift[],
-			const char particle_dir[],
+			const char filebase[],
 			const char halo_dir[],
 			MpiInterface const * const mpi,
 			Logger& logger,
 			Particles* const particles,
 			ParticleSet<Halo>* halos,
 			const float buffer_factor,
+			const int nc_node_dim, const int mesh_scale,
 			const float ll,
 			KDTree* const tree,
 			int* const temp_buffer,
@@ -258,12 +272,14 @@ void for_each_readshift(const char redshift[],
   logger.begin_timer(io);
 
   logger << "z " << redshift << "\n";
-  char filename[256];
 
   //
   // Read and distribute shift
   //
   float shift[]= {0.0f, 0.0f, 0.0f};
+  // ??? Do we need shift???
+  /*
+
   if(mpi->rank() == 0) {
     sprintf(filename, "shift/%sshift.txt", redshift);
     float z;
@@ -283,11 +299,16 @@ void for_each_readshift(const char redshift[],
   if(mpi->rank() == 1) { // debug
     cout << "shift(1) " << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
   }
+  */
+
+  // filebase: ./node
+  //sprintf(filename, "%s/%sxv%d.dat", particle_dir, redshift, mpi->index());
+
+  //read_pm_file2(filename, particles, shift);
+  read_pm_file3(filebase, redshift, mpi->index(), buffer_factor, nc_node_dim,
+		mesh_scale,
+		particles);
   
-  sprintf(filename, "%s/%sxv%d.dat", particle_dir, redshift, mpi->index());
-
-  read_pm_file2(filename, particles, shift);
-
   if(particles->np_local <= 0)
     mpi->abort("No particles\n");
 
@@ -380,9 +401,12 @@ void for_each_readshift(const char redshift[],
   //
   // Spherical Overdensity Halo
   //
+  char filename[256];
   logger.begin_timer(so_halo);
-  sprintf(filename, "%s/%shalo%d.dat", 
-	  halo_dir, redshift, mpi->index());
+  /*sprintf(filename, "%s/%shalo%d.dat", 
+    halo_dir, redshift, mpi->index());*/
+  sprintf(filename, "%s%d/%shalo%d.dat",
+	  filebase, mpi->index(), redshift, mpi->index());
   read_and_exchage_halo(filename, mpi, halos, buffer_factor, shift);
   Halo const * const h= halos->particle;
   const index_t n_sohalo= halos->np_with_buffers;
