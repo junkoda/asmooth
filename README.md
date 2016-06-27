@@ -37,3 +37,23 @@ per line, e.g.,
 - `-allocate <Mbytes>`: Amount memory allocated for particle in Mbytes
           about (`np_local*36*1.1^3`) byte is necessary (1.1^3 for 5% buffer).
           
+### example
+
+```bash
+$ tree
+.
+├── asmooth
+│   └── clumping_tree
+├── redshifts.txt
+├── results
+│   ├── node0
+│   │   ├── 0.000halo0.dat
+│   │   ├── 0.000zip0_0.dat
+...
+│   ├── node7
+...
+```
+
+```bash
+$ mpirun -n 8 ./asmooth/clumping_tree -nc 32,64,128 -nc_node_dim 32 -node_dir results/node -allocate 128
+```
