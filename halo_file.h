@@ -13,10 +13,11 @@ void read_and_exchage_halo(const char filename[],
 			   ParticleSet<Halo>* const halos,
 			   const float buffer_factor,
 			   const float shift[]);
-
+/*
 int read_halo_file_all(const char redshift[], 
 		       const int file_index, const int file_nc,
 		       ParticleSet<Halo>* const halos,
 		       const float buffer_factor,
 		       const float shift[]);
+*/
 #endif

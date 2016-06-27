@@ -171,9 +171,11 @@ void read_pm_file3(const char filebase[], const char redshift[], const int inode
 
   // Check end of file)
   char test_i1;
+  assert(feof(fp0) == 0);     // should not be EOF yet
   fread(&test_i1, 1, 1, fp0);
-  assert(feof(fp0) != 0);
+  assert(feof(fp0) != 0);     // should be EOF
 
+  assert(feof(fp1) == 0);
   fread(&test_i1, 1, 1, fp1);
   assert(feof(fp1) != 0);
 
