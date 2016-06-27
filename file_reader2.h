@@ -6,7 +6,7 @@
 
 struct ErrorParticleReader{};
 
-void read_pm_file3(const char filebase[], const char redshift[], const int inode, const float buffer_factor, const int nc_node_dim, const int mesh_scale, Particles* const particles);
+void read_pm_file3(const char filebase[], const char redshift[], const int inode, const float buffer_factor, const int nc_node_dim, const int mesh_scale, const float shift[], Particles* const particles);
 
 #endif
 

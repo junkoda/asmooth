@@ -81,7 +81,8 @@ int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
     halo->mass= buf[15];
     //halo->r= pow(buf[14]/delta, 1.0f/3); // based on gridmass (correct)
     //halo->r= buf[13]; // (imass/delta)^(1/3)
-    assert(abs(m/(4.0f/3.0f*M_PI*r*r*r) - 178.0f) < 0.1);
+    printf("%e %e %e %e %e\n", halo->x[0], halo->x[1], halo->x[2], m, r);
+    //assert(abs(m/(4.0f/3.0f*M_PI*r*r*r) - 178.0f) < 0.1);
 
     ++n;
     ++halo;

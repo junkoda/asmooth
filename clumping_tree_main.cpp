@@ -17,9 +17,9 @@
 
 using namespace std;
 
-static void for_each_readshift(const char redshift[],
-			const char particle_dir[],
-			const char halo_dir[],
+
+static void for_each_redshift(const char redshift[],
+			const char filebase[],
 			MpiInterface const * const mpi,
 			Logger& logger,
 			Particles* const particles,
@@ -31,6 +31,7 @@ static void for_each_readshift(const char redshift[],
 			int* const temp_buffer,
 			float* const mesh,
 			deque<int>& ncs);
+
 
 static int remove_extra_particles(Particles* const particles, const float buffer_factor);
 
@@ -59,9 +60,9 @@ int main(int argc, char* argv[])
   if(argc == 1 && mpi->index() == 0) {
     cout << "clumping_tree [options]\n"
 	 << "\t-pm_redshift <z>; p3m file <z>xv<i>.dat\n"
-	 << "\t-pdir <particle directory>; -pdir particle_data\n"
+	 << "\t-node_dir <node directory >; -pdir particle_data\n"
 	 << "\t-allocate <MB for particles>\n"
-	 << "\t-boxsize <boxsize>\n"
+      //<< "\t-boxsize <boxsize>\n"
 	 << "\t-buffer_factor 0.05\n"
          << "\t-nc_node_dim 32\n"
 	 << "\t-mesh_scale 4\n"
@@ -82,19 +83,18 @@ int main(int argc, char* argv[])
   //
   Option op(argc, argv);
   op.set_default("-pm_redshift", "redshifts.txt");
-  op.set_default("-pdir", "particle_data");
-  op.set_default("-hdir", "halo_data");
+  op.set_default("-node_dir", "results/node");
+  //op.set_default("-hdir", "halo_data");
   op.set_default("-allocate", "512"); // 12M particles ~ 512MB
-  op.set_default("-boxsize", "-1");
+  //op.set_default("-boxsize", "-1");
   op.set_default("-buffer_factor", "0.05");
   op.set_default("-nc_node_dim", "0");
   op.set_default("-l", "0.2");
   op.set_default("-nc", "256");       // nc^3 is number of mesh in this node
-  op.set_default("-ncf", "0"); // finemesh clumping
   op.set_default("-mesh_scale", "4");
 
-  const float boxsize= op.get_float("-boxsize");
-  assert(boxsize > 0.0f);
+  //const float boxsize= op.get_float("-boxsize");
+  //assert(boxsize > 0.0f);
   const float buffer_factor= op.get_float("-buffer_factor");
   const int nc_node_dim= op.get_int("-nc_node_dim");
   const int mesh_scale= op.get_int("-mesh_scale");
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
   //const int nc= op.get_int("-nc");
   const float ll= 2.0f * op.get_float("-l");
 
-  logger << "boxsize " << boxsize << "\n";
+  //logger << "boxsize " << boxsize << "\n";
   logger << "buffer_factor " << buffer_factor << "\n";
   logger << "nc_node_dim " << nc_node_dim << "\n";
   logger << "mesh_scale " << mesh_scale << "\n";
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
   const size_t np_allocate= mbyte_alloc*1024*1024/sizeof(Particle);
   Particles* particles= new Particles();
   particles->allocate(np_allocate);
-  particles->boxsize= boxsize;
+  //particles->boxsize= boxsize;
 
   KDTree* tree= new KDTreeSimple();
   tree->allocate(np_allocate, 16);
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
   ParticleSet<Halo>* halos= new ParticleSet<Halo>();
   halos->allocate(temp, np_allocate/sizeof(Halo));
   //halos->allocate(2000);
-  halos->boxsize= boxsize;
+  //halos->boxsize= boxsize; !!!
 
   //
   // Make output directory
@@ -200,9 +200,8 @@ int main(int argc, char* argv[])
   //
   for(deque<string>::iterator z= redshifts.begin();
       z != redshifts.end(); ++z) {
-    for_each_readshift(z->c_str(),        // redshift
-		       op["-pdir"].c_str(), // particle dir
-		       op["-hdir"].c_str(), // halo dir
+    for_each_redshift(z->c_str(),        // redshift
+		       op["-node_dir"].c_str(), // particle dir
 		       mpi,
 		       logger,
 		       particles,
@@ -217,6 +216,7 @@ int main(int argc, char* argv[])
 
   }
 
+  logger << "boxsize " << particles->boxsize << "\n";
   logger << "done all\n";
 
   delete tree;
@@ -249,9 +249,8 @@ int main(int argc, char* argv[])
   */
 
 
-void for_each_readshift(const char redshift[],
+void for_each_redshift(const char redshift[],
 			const char filebase[],
-			const char halo_dir[],
 			MpiInterface const * const mpi,
 			Logger& logger,
 			Particles* const particles,
@@ -264,7 +263,7 @@ void for_each_readshift(const char redshift[],
 			float* const mesh,
 			deque<int>& ncs)
 {
-  const float boxsize= particles->boxsize;
+  //const float boxsize= particles->boxsize;
   //
   // Read File
   //
@@ -276,38 +275,37 @@ void for_each_readshift(const char redshift[],
   //
   // Read and distribute shift
   //
+  char filename[256];
+  bool shift_file= true;
   float shift[]= {0.0f, 0.0f, 0.0f};
-  // ??? Do we need shift???
-  /*
 
   if(mpi->rank() == 0) {
     sprintf(filename, "shift/%sshift.txt", redshift);
     float z;
     FILE* fp= fopen(filename, "r");
     if(fp == 0) {
-      cerr << "Unable to open shift: " << filename << endl;
-      mpi->abort("shift file error");
+      shift_file= false;
+      logger << "No shift file";
     }
-    int ret= fscanf(fp, "%e %e %e %e", &z, shift, shift+1, shift+2);
-    assert(ret == 4);
-    fclose(fp);
+    else {
+      int ret= fscanf(fp, "%e %e %e %e", &z, shift, shift+1, shift+2);
+      assert(ret == 4);
+      fclose(fp);
+    }
   }
-  mpi->bcast(shift, 3, MPI_FLOAT);
-  logger << "shift " 
-	 << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
-
-  if(mpi->rank() == 1) { // debug
-    cout << "shift(1) " << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
+  if(shift_file) {
+    mpi->bcast(shift, 3, MPI_FLOAT);
+    logger << "shift " 
+	   << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
   }
-  */
 
-  // filebase: ./node
-  //sprintf(filename, "%s/%sxv%d.dat", particle_dir, redshift, mpi->index());
 
-  //read_pm_file2(filename, particles, shift);
   read_pm_file3(filebase, redshift, mpi->index(), buffer_factor, nc_node_dim,
-		mesh_scale,
+		mesh_scale, shift,
 		particles);
+
+  const float boxsize= particles->boxsize;
+  halos->boxsize= boxsize;
   
   if(particles->np_local <= 0)
     mpi->abort("No particles\n");
@@ -401,7 +399,6 @@ void for_each_readshift(const char redshift[],
   //
   // Spherical Overdensity Halo
   //
-  char filename[256];
   logger.begin_timer(so_halo);
   /*sprintf(filename, "%s/%shalo%d.dat", 
     halo_dir, redshift, mpi->index());*/

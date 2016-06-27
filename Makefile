@@ -26,7 +26,7 @@ OBJS     += global_mesh.o
 
 CXXFLAGS  = $(OPTIONS)
 
-LIBS      = -lm -lstdc++
+LIBS      = -lm
 
 all: $(EXEC)
 clumping_tree: $(OBJS) performance_items.h
