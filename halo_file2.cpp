@@ -11,11 +11,13 @@
 #include <stdint.h>
 using namespace std;
 
+// Halo File format
 static const int halo_ndat= 22; // number of float per halo (old ver. 17)
 static const int halo_x= 0;     // offset for halo position (starting 0)
 static const int halo_m= 4;     // offset for halo mass
 static const int halo_r= 6;     // offset for halo radius
 static const float halo_delta= 200.0f; // overdensity
+static const int npid= 50;
 
 void correct_halo_coordinate(ParticleSet<Halo>* const halos);
 void correct_halo_coordinate_full(ParticleSet<Halo>* const halos,
@@ -85,7 +87,7 @@ int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
 
 #ifdef PID_FLAG
     // 50 8-byte integer for id and 6 4-byte floats for xv
-    fseek(fp, 50*(8+4*6), SEEK_CUR);
+    fseek(fp, npid*(8+4*6), SEEK_CUR);
 #endif
     
     ++n;

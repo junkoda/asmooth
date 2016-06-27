@@ -179,8 +179,8 @@ void read_pm_file3(const char filebase[], const char redshift[], const int inode
   fread(&test_i1, 1, 1, fp1);
   assert(feof(fp1) != 0);
 
-  printf("np_uzip = %d\n", np_uzip);
-  printf("nc_node_dim = %d\n", nc_node_dim);
+  //printf("np_uzip = %d\n", np_uzip);
+  //printf("nc_node_dim = %d\n", nc_node_dim);
   
   if(np_uzip != np_local) {
     cerr << "Something wrong with reading dark matter zipped files\n";

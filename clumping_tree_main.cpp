@@ -185,9 +185,10 @@ int main(int argc, char* argv[])
 
     for(deque<int>::iterator p= ncs.begin(); p != ncs.end(); ++p) {
       const int nc= *p; assert(nc > 0);
-
+#ifdef FOFON
       sprintf(dirname, "fof/nc%d/", nc);
       ret= make_directory(dirname); assert(ret);
+#endif
 
       sprintf(dirname, "so/nc%d/", nc);
       make_directory(dirname); assert(ret);
@@ -272,11 +273,12 @@ void for_each_redshift(const char redshift[],
 
   logger << "z " << redshift << "\n";
 
+
   //
   // Read and distribute shift
   //
   char filename[256];
-  bool shift_file= true;
+  int shift_file= true;
   float shift[]= {0.0f, 0.0f, 0.0f};
 
   if(mpi->rank() == 0) {
@@ -293,12 +295,13 @@ void for_each_redshift(const char redshift[],
       fclose(fp);
     }
   }
+  mpi->bcast(&shift_file, 1, MPI_INT);  
+
   if(shift_file) {
     mpi->bcast(shift, 3, MPI_FLOAT);
     logger << "shift " 
 	   << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
   }
-
 
   read_pm_file3(filebase, redshift, mpi->index(), buffer_factor, nc_node_dim,
 		mesh_scale, shift,
@@ -306,7 +309,7 @@ void for_each_redshift(const char redshift[],
 
   const float boxsize= particles->boxsize;
   halos->boxsize= boxsize;
-  
+
   if(particles->np_local <= 0)
     mpi->abort("No particles\n");
 
@@ -405,6 +408,9 @@ void for_each_redshift(const char redshift[],
   sprintf(filename, "%s%d/%shalo%d.dat",
 	  filebase, mpi->index(), redshift, mpi->index());
   read_and_exchage_halo(filename, mpi, halos, buffer_factor, shift);
+
+  logger << "nhalo_local= " << halos->np_local << "\n";
+  
   Halo const * const h= halos->particle;
   const index_t n_sohalo= halos->np_with_buffers;
 
