@@ -2,6 +2,7 @@
 #include <cstdio>
 #include "basic_types.h"
 #include "file_reader.h"
+#include "endian.h"
 
 using namespace std;
 
@@ -101,19 +102,19 @@ void read_pm_file3(const char filebase[], const char redshift[], const int inode
   fread(&zip_header0, sizeof(P3m_zip_header0), 1, fp0);
   fread(zip_header1, sizeof(float), 16, fp1);
 
-  const index_t np_local= zip_header0.np_local;
+  const index_t np_local= endian_int(zip_header0.np_local);
   particles->np_local= np_local;
   particles->np_with_buffers= np_local;
 
   
-  if(particles->np_allocated < zip_header0.np_local) {
+  if(particles->np_allocated < np_local) {
     cerr << "Too many particles to store\n";
-    cerr << "np_local= " <<  zip_header0.np_local << endl;
+    cerr << "np_local= " <<  np_local << endl;
     cerr << "particles->np_allocated= " << particles->np_allocated << endl;
     throw ErrorParticleReader();
   }
 
-  const float v_r2i= zip_header0.v_r2i;
+  const float v_r2i= endian_float(zip_header0.v_r2i);
   
   int np_uzip= 0;
   int rr_i4;
@@ -137,6 +138,7 @@ void read_pm_file3(const char filebase[], const char redshift[], const int inode
 #endif
 	if(rr_i4 == 255) { // rr_i4 read throgh rhoc_i1
 	  fread(&rr_i4, sizeof(int), 1, fp3);
+	  rr_i4 = endian_int(rr_i4);
 	}
 	for(int l=1; l<=rr_i4; ++l) {
 	  xi4[0]= xi4[1]= xi4[2]= 0;
@@ -152,6 +154,10 @@ void read_pm_file3(const char filebase[], const char redshift[], const int inode
 	  fread(xi1 + 11, 1, 1, fp0);
 #endif
 	  fread(vi2, sizeof(short), 3, fp1);
+	  vi2[0]= endian_short(vi2[0]);
+	  vi2[1]= endian_short(vi2[1]);
+	  vi2[2]= endian_short(vi2[2]);
+	  
 	  int index= np_uzip - 1;
 	  assert(0 <= index && index < np_local);
 	  p[index].x[0]=
@@ -192,5 +198,24 @@ void read_pm_file3(const char filebase[], const char redshift[], const int inode
   fclose(fp0);
   fclose(fp1);
   fclose(fp2);
+}
+
+void write_ascii(const char redshift[], const int inode,  Particles* const particles)
+{
+  char filename[128];
+  
+  sprintf(filename, "%sascii%d.txt", redshift, inode);
+  FILE* const fp= fopen(filename, "w"); assert(fp);
+
+  const int np= particles->np_local;
+  Particle* const p= particles->particle;
+  
+  for(int i=0; i<np; ++i) {
+    fprintf(fp, "%e %e %e %e %e %e\n",
+	    p[i].x[0], p[i].x[1], p[i].x[2],
+	    p[i].v[0], p[i].v[1], p[i].v[2]);
+  }
+
+  fclose(fp);
 }
 

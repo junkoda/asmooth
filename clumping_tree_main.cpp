@@ -307,6 +307,9 @@ void for_each_redshift(const char redshift[],
 		mesh_scale, shift,
 		particles);
 
+  //write_ascii(redshift, mpi->index(), particles);
+  
+  
   const float boxsize= particles->boxsize;
   halos->boxsize= boxsize;
 
