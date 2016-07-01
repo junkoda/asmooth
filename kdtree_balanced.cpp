@@ -26,6 +26,19 @@ KDTree::~KDTree()
   free(my_nodes);
 }
 
+size_t KDTree::estimate_mem(const int np_max, const int quota_)
+{
+  index_t n_leaf= 1;
+  
+  while(16*n_leaf < np_max)
+    n_leaf <<= 1;
+
+  nn_alloc= 2*n_leaf - 1;
+
+  return sizeof(Node)*(size_t)(nn_alloc);
+}
+
+
 
 //
 // KDTreeBalanced
@@ -41,6 +54,7 @@ void KDTreeBalanced::allocate(const int np_max, const int quota_)
   //cout << "n_leaf " << np_max << " " <<  n_leaf << endl;
 
   nn_alloc= 2*n_leaf - 1;
+
   my_nodes= (Node*) malloc(sizeof(Node)*(size_t)(nn_alloc));
   assert(my_nodes);
 }

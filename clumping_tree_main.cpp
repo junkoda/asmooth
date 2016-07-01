@@ -155,19 +155,47 @@ int main(int argc, char* argv[])
   //
   // Allocate Memory
   //
+
+
+  
   const size_t mbyte_alloc= op.get_int("-allocate");
   const size_t np_allocate= mbyte_alloc*1024*1024/sizeof(Particle);
+
+  if(mpi->rank() == 0) {
+    cerr << "MPI size = " << mpi->size() << endl;
+    cerr << "Allocate " << mbyte_alloc << " Mbytes for particles\n";
+    cerr << "np_allocate = " << np_allocate << endl;
+  }
+
   Particles* particles= new Particles();
   particles->allocate(np_allocate);
   //particles->boxsize= boxsize;
 
   KDTree* tree= new KDTreeSimple();
+
+  size_t mem_tree= tree->estimate_mem(np_allocate, 16);
+  if(mpi->rank() == 0) {
+    cerr << mem_tree << " bytes for KD tree" << endl;
+    cerr << mem_tree/(1024*1024) << " Mbytes\n";
+  }
+  
   tree->allocate(np_allocate, 16);
   set_nbr_search(tree->root(), particles->particle);
+
+  if(mpi->rank() == 0) {
+    cerr << sizeof(float)*np_allocate << " bytes for temp" << endl;
+    cerr << "or, " << sizeof(float)*np_allocate/(1024*1024) << " Mbytes\n";
+  }
+
 
   int* const temp= (int*) malloc(sizeof(float)*np_allocate);
   assert(temp);
 
+  if(mpi->rank() == 0) {
+    cerr << (sizeof(float)*nc*nc*nc*6) << " bytes for mesh" << endl;
+    cerr << "or, " << (sizeof(float)*nc*nc*nc*6) << " Mbytes\n";
+  }
+  
   float* const mesh= (float*) malloc(sizeof(float)*nc*nc*nc*6);
   assert(mesh);
 

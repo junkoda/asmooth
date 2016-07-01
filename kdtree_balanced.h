@@ -15,6 +15,7 @@ class KDTree {
   virtual ~KDTree();
   virtual void allocate(const int np_max, const int quota= 16)=0;
   virtual index_t construct(Particles* const, const float, const float)=0;
+  size_t estimate_mem(const int np_max, const int quota_);
   Node* root() const { return my_nodes; }
   Particles* particles(){ return my_particles; }
  protected:
