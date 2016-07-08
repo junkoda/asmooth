@@ -49,6 +49,7 @@ double halo_delta_vir(const double z, const double omega_m)
 #ifdef M200
   return delta200;
 #else
+  assert(omega_m > 0.0);
   const double a= 1.0/(1.0 + z);
   const double omega_l= 1.0 - omega_m;
   const double omega_z= omega_m/(omega_m + omega_l*a*a*a);
@@ -69,6 +70,7 @@ void read_and_exchage_halo(const char filename[],
 {
   float delta_halo = halo_delta_vir(z, omega_m);
   if(mpi->rank() == 0) {
+    printf("omega_m = %.4f\n", omega_m);
     printf("halo_delta = %.3f at z= %.4f\n", delta_halo, z);
   }
 
