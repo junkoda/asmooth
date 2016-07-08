@@ -110,7 +110,14 @@ int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
     const float r= halo->r= endian_float(buf[halo_r]);
     const float m= endian_float(buf[halo_m]);
     halo->mass= m;
-    assert(fabs(m/(4.0f/3.0f*M_PI*r*r*r) - halo_delta) < torr);
+    //assert(fabs(m/(4.0f/3.0f*M_PI*r*r*r) - halo_delta) < torr);
+    if(fabs(m/(4.0f/3.0f*M_PI*r*r*r) - halo_delta) >= torr) {
+      cerr << "Halo over density in file seems incorrect\n";
+      cerr << "halo_delta " << halo_delta << endl;
+      cerr << "delta data = " << m/(4.0f/3.0f*M_PI*r*r*r) << endl;
+      cerr << "Do not agree with in torr = " << torr << endl;
+      assert(false);
+    }
 
 #ifdef PID_FLAG
     // 50 8-byte integer for id and 6 4-byte floats for xv
