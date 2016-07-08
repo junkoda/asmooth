@@ -17,13 +17,12 @@ using namespace std;
 #ifdef M200
 static const int halo_m= 4;     // offset for halo mass
 static const int halo_r= 6;     // offset for halo radius
-static const float halo_delta= 200.0f; // overdensity
-static const float torr = 10.0f;
+static const float delta200= 200.0f; // overdensity
+static const float torr= 10.0f;
 #else
 static const int halo_m= 3;     // offset for halo mass (Bryan and Norman)
 static const int halo_r= 5;     // offset for halo radius
-static const float halo_delta= 178.0f; // overdensity
-static const float torr = 10.0f;
+static const float torr= 10.0f;
 #endif
 
 static const int halo_ndat= 22; // number of float per halo (old ver. 17)
@@ -33,11 +32,8 @@ static const int npid= 50;
 void correct_halo_coordinate(ParticleSet<Halo>* const halos);
 void correct_halo_coordinate_full(ParticleSet<Halo>* const halos,
 				  const int icpu[]);
-int read_halo_file_nbr(const char filename[], 
-		       const int nc_node[],
-		       ParticleSet<Halo>* const halos,
-		       const float buffer_factor,
-		       const float shift[]);
+int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
+		   const float shift[], const float halo_delta);
 
 // Read halo_data/*halo<n>.dat
 // 0-2  : hpos(3)
@@ -48,15 +44,35 @@ int read_halo_file_nbr(const char filename[],
 // ...
 
 
+double halo_delta_vir(const double z, const double omega_m)
+{
+#ifdef M200
+  return delta200;
+#else
+  const double a= 1.0/(1.0 + z);
+  const double omega_l= 1.0 - omega_m;
+  const double omega_z= omega_m/(omega_m + omega_l*a*a*a);
+  const double x= omega_z - 1.0;
+  
+  return (18.0*M_PI*M_PI + 82.0*x - 39.0*x*x)*
+    ((omega_m + omega_l*a*a*a)/(omega_m));
+#endif
+}
 
 void read_and_exchage_halo(const char filename[],
+			   const float z, const float omega_m,
 			   MpiInterface const * const mpi,
 			   ParticleSet<Halo>* const halos,
 			   const float buffer_factor,
-			   const float shift[])
+			   const float shift[]
+			   )
 {
-  read_halo_file(filename, halos, shift);
+  float delta_halo = halo_delta_vir(z, omega_m);
+  if(mpi->rank() == 0) {
+    printf("halo_delta = %.3f at z= %.4f\n", delta_halo, z);
+  }
 
+  read_halo_file(filename, halos, shift, delta_halo);
   /*
   if(full_box)
     correct_halo_coordinate_full(halos, mpi->coordinate());
@@ -68,7 +84,7 @@ void read_and_exchage_halo(const char filename[],
 }
 
 int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
-		   const float shift[])
+		const float shift[], const float halo_delta)
 {
   int nhalo=0;
   FILE* fp= fopen(filename, "r");

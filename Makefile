@@ -18,7 +18,7 @@ OPTIONS  += -DHALO_EXCISE # Excise halo using given halo catalog
 OPTIONS  += -DPID_FLAG # Halo file format with particle IDs
 
 # Halo removal
-OPTIONS  += -DM200 # Use M200/r200 instead of Mvir/rvir (Bryan and Norman)
+# OPTIONS  += -DM200 # Use M200/r200 instead of Mvir/rvir (Bryan and Norman)
 
 OBJS     := clumping_tree_main.o 
 OBJS     += option.o

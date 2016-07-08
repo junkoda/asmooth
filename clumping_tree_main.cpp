@@ -92,12 +92,14 @@ int main(int argc, char* argv[])
   op.set_default("-l", "0.2");
   op.set_default("-nc", "256");       // nc^3 is number of mesh in this node
   op.set_default("-mesh_scale", "4");
+  op.set_default("-omegam", "0");
 
   //const float boxsize= op.get_float("-boxsize");
   //assert(boxsize > 0.0f);
   const float buffer_factor= op.get_float("-buffer_factor");
   const int nc_node_dim= op.get_int("-nc_node_dim");
   const int mesh_scale= op.get_int("-mesh_scale");
+
   
   assert(buffer_factor > 0.0f);
   //const int nc= op.get_int("-nc");
@@ -169,6 +171,7 @@ int main(int argc, char* argv[])
 
   Particles* particles= new Particles();
   particles->allocate(np_allocate);
+  particles->omega_m= op.get_float("-omegam");
   //particles->boxsize= boxsize;
 
   KDTree* tree= new KDTreeSimple();
@@ -193,7 +196,7 @@ int main(int argc, char* argv[])
 
   if(mpi->rank() == 0) {
     cerr << (sizeof(float)*nc*nc*nc*6) << " bytes for mesh" << endl;
-    cerr << "or, " << (sizeof(float)*nc*nc*nc*6) << " Mbytes\n";
+    cerr << "or, " << (sizeof(float)*nc*nc*nc*6/(1024*1024)) << " Mbytes\n";
   }
   
   float* const mesh= (float*) malloc(sizeof(float)*nc*nc*nc*6);
@@ -300,7 +303,8 @@ void for_each_redshift(const char redshift[],
   logger.begin_timer(io);
 
   logger << "z " << redshift << "\n";
-
+  const float z= atof(redshift);
+  const float omega_m= particles->omega_m;
 
   //
   // Read and distribute shift
@@ -438,7 +442,7 @@ void for_each_redshift(const char redshift[],
     halo_dir, redshift, mpi->index());*/
   sprintf(filename, "%s%d/%shalo%d.dat",
 	  filebase, mpi->index(), redshift, mpi->index());
-  read_and_exchage_halo(filename, mpi, halos, buffer_factor, shift);
+  read_and_exchage_halo(filename, z, omega_m, mpi, halos, buffer_factor, shift);
 
   logger << "nhalo_local= " << halos->np_local << "\n";
   

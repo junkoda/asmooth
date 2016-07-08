@@ -31,7 +31,8 @@ struct Particles {
   index_t np_allocated, np_local, np_with_buffers;
   particle_id_t id_begin, np_total;
   float boxsize;
-
+  float omega_m;
+  
   void allocate(const index_t n_alloc);
 };
 
