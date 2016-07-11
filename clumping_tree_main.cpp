@@ -106,16 +106,22 @@ int main(int argc, char* argv[])
 
   
   assert(buffer_factor > 0.0f);
-  //const int nc= op.get_int("-nc");
   const float ll= 2.0f * op.get_float("-l");
 
   logger << "buffer_factor " << buffer_factor << "\n";
-  logger << "nc_node_dim " << nc_node_dim << "\n";
-  logger << "mesh_scale " << mesh_scale << "\n";
   logger << "linking_length(internal) " << ll << "\n";
 
-  if(nc_node_dim <= 0) {
-    mpi->abort("Error: option -nc_node_dim not given");
+  if(boxsize <= 0.0f) {
+    logger << "zip particle format\n";
+    logger << "nc_node_dim " << nc_node_dim << "\n";
+    logger << "mesh_scale " << mesh_scale << "\n";
+
+    if(nc_node_dim <= 0) {
+      mpi->abort("Error: option -nc_node_dim not given");
+    }
+  }
+  else {
+    logger << "-xv option given; boxsize = " << boxsize << "\n";
   }
   
   // nc list
