@@ -6,6 +6,7 @@
 
 using namespace std;
 
+
 struct P3m_header
 {
   int np_local;
@@ -20,10 +21,76 @@ struct P3m_zip_header0
 };
 
 
-void read_pm_file3(const char filebase[], const char redshift[], const int inode, const float buffer_factor, const int nc_node_dim, const int mesh_scale, const float shift[], Particles* const particles)
+void read_pm_file_xv(const char filebase[], const char redshift[], const int inode, const float buffer_factor, const float shift[], Particles* const particles)
 {
   //
-  // Read PM file and add particles
+  // Read particles from xv file
+  // 
+  // filename: <filebase><inode>/<redshift>xv<inode>.dat
+  //   e.g.    results/node 0 / 6.000 xv 0 .dat
+  char filename[256];
+  sprintf(filename, "%s%d/%sxv%d.dat", filebase, inode, redshift, inode);
+  
+  FILE* const fp= fopen(filename, "r");
+  if(fp == 0) {
+    cerr << "Unable to read xv file: " << filename << endl;
+    throw ErrorParticleReader();
+  }
+  
+  //
+  // Read header
+  //
+  P3m_header header;
+  const int ret_read_header= fread(&header, sizeof(P3m_header), 1, fp);
+  assert(ret_read_header == 1);
+
+  if(particles->np_allocated < header.np_local) {
+    cerr << "Not enough space for particles: "
+         << particles->np_allocated << " < "
+         << header.np_local << endl;
+    throw ErrorParticleReader();
+  }
+
+  const index_t np= header.np_local;
+  particles->np_local= np;
+  particles->np_with_buffers= np;
+
+  float* const buf= (float*) particles->particle;
+  float* xv= buf + (sizeof(Particle)/sizeof(float)*particles->np_allocated - 6*(np+1));
+
+  //
+  // Read particles
+  //
+  const int ret= fread(xv, sizeof(float), 6*np, fp);
+  assert(ret == 6*np);
+
+  const int ret_fclose= fclose(fp);
+  assert(ret_fclose == 0);
+
+  //Put xv data into Particle format
+  
+  Particle* p= particles->particle;
+
+  for(int j=0; j<np; ++j) {
+    p->x[0]= xv[0] - shift[0];
+    p->x[1]= xv[1] - shift[1];
+    p->x[2]= xv[2] - shift[2];
+    p->v[0]= xv[3]; p->v[1]= xv[4]; p->v[2]= xv[5];
+    p->rk= 0.0f;
+    p->dens= 0.0f;
+    p->igrp= 0;
+
+    ++p;
+    xv += 6;
+  }
+}
+
+
+
+void read_pm_file_zip(const char filebase[], const char redshift[], const int inode, const float buffer_factor, const int nc_node_dim, const int mesh_scale, const float shift[], Particles* const particles)
+{
+  //
+  // Read particles from zipped format
   //
   // filebase: node or dir/node
   char filename[256];

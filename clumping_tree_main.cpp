@@ -17,6 +17,8 @@
 
 using namespace std;
 
+// Semi-global variables
+static float boxsize;
 
 static void for_each_redshift(const char redshift[],
 			const char filebase[],
@@ -59,13 +61,13 @@ int main(int argc, char* argv[])
 
   if(argc == 1 && mpi->index() == 0) {
     cout << "clumping_tree [options]\n"
-	 << "\t-pm_redshift <z>; p3m file <z>xv<i>.dat\n"
-	 << "\t-node_dir <node directory >; -pdir particle_data\n"
+	 << "\t-pm_redshift <redshifts.txt>; file with list of redshifts\n"
+	 << "\t-node_dir <node directory >; -node_dir results/node\n"
 	 << "\t-allocate <MB for particles>\n"
-      //<< "\t-boxsize <boxsize>\n"
 	 << "\t-buffer_factor 0.05\n"
-         << "\t-nc_node_dim 32\n"
-	 << "\t-mesh_scale 4\n"
+	 << "\t-xv 912; -xv <local boxsize> (for xv particle format)\n"
+         << "\t-nc_node_dim 32 (for zip particle format)\n"
+	 << "\t-mesh_scale 4   (for zip particle format)\n"
          << "\t-l 0.2; FOF linking length"
          << "\t-nc <nc1,nc2,...> list of number of mesh";
     
@@ -86,7 +88,7 @@ int main(int argc, char* argv[])
   op.set_default("-node_dir", "results/node");
   //op.set_default("-hdir", "halo_data");
   op.set_default("-allocate", "512"); // 12M particles ~ 512MB
-  //op.set_default("-boxsize", "-1");
+  op.set_default("-xv <boxsize>", "-1");
   op.set_default("-buffer_factor", "0.05");
   op.set_default("-nc_node_dim", "0");
   op.set_default("-l", "0.2");
@@ -94,8 +96,10 @@ int main(int argc, char* argv[])
   op.set_default("-mesh_scale", "4");
   op.set_default("-omegam", "0");
 
-  //const float boxsize= op.get_float("-boxsize");
-  //assert(boxsize > 0.0f);
+  // If you read particles from xv file, give boxsize with -xv boxsize
+  // boxsize is in internal unit; 2xnumber of particles per dim
+  boxsize= op.get_float("-xv");
+  
   const float buffer_factor= op.get_float("-buffer_factor");
   const int nc_node_dim= op.get_int("-nc_node_dim");
   const int mesh_scale= op.get_int("-mesh_scale");
@@ -105,7 +109,6 @@ int main(int argc, char* argv[])
   //const int nc= op.get_int("-nc");
   const float ll= 2.0f * op.get_float("-l");
 
-  //logger << "boxsize " << boxsize << "\n";
   logger << "buffer_factor " << buffer_factor << "\n";
   logger << "nc_node_dim " << nc_node_dim << "\n";
   logger << "mesh_scale " << mesh_scale << "\n";
@@ -172,7 +175,6 @@ int main(int argc, char* argv[])
   Particles* particles= new Particles();
   particles->allocate(np_allocate);
   particles->omega_m= op.get_float("-omegam");
-  //particles->boxsize= boxsize;
 
   KDTree* tree= new KDTreeSimple();
 
@@ -204,8 +206,6 @@ int main(int argc, char* argv[])
 
   ParticleSet<Halo>* halos= new ParticleSet<Halo>();
   halos->allocate(temp, np_allocate/sizeof(Halo));
-  //halos->allocate(2000);
-  //halos->boxsize= boxsize; !!!
 
   //
   // Make output directory
@@ -295,7 +295,6 @@ void for_each_redshift(const char redshift[],
 			float* const mesh,
 			deque<int>& ncs)
 {
-  //const float boxsize= particles->boxsize;
   //
   // Read File
   //
@@ -335,14 +334,19 @@ void for_each_redshift(const char redshift[],
 	   << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
   }
 
-  read_pm_file3(filebase, redshift, mpi->index(), buffer_factor, nc_node_dim,
-		mesh_scale, shift,
-		particles);
-
+  if(boxsize > 0.0f) {
+    read_pm_file_xv(filebase, redshift, mpi->index(), buffer_factor,
+		    shift, particles);
+    particles->boxsize = boxsize;
+  }
+  else {
+    read_pm_file_zip(filebase, redshift, mpi->index(), buffer_factor, nc_node_dim,
+      mesh_scale, shift,
+      particles);
+    boxsize= particles->boxsize;
+  }
   //write_ascii(redshift, mpi->index(), particles);
-  
-  
-  const float boxsize= particles->boxsize;
+
   halos->boxsize= boxsize;
 
   if(particles->np_local <= 0)

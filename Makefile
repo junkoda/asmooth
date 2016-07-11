@@ -12,10 +12,13 @@ OPTIONS  := $(OPTIMIZE) $(OPENMP)
 OPTIONS  += -DHALO_EXCISE # Excise halo using given halo catalog
 # OPTIONS  += FOFON  # Do also Friends-of-friends halo finding/excising
 
-# Particle file format
-# OPTIONS  += -DBGQ  # Running this on a big endian machine (file_reader2.cpp)
+# Options for zipped particle format
+# OPTIONS  += -DBGQ  # Running this on a big endian machine
 # OPTIONS += -DSWAPENDIAN # Running this code on different endian wrt file
+
+# Options for halo file
 OPTIONS  += -DPID_FLAG # Halo file format with particle IDs
+
 
 # Halo removal
 # OPTIONS  += -DM200 # Use M200/r200 instead of Mvir/rvir (Bryan and Norman)
