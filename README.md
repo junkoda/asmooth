@@ -50,6 +50,8 @@ For example, for 5472^3 particles in total with 12^3 MPI nodes, boxsize should b
 
 - `-nc <nc>`: This is the number of output cells per dimension *per node*.
           You can assign comma sperated numbers (no space in between).
+
+- `-omegam 0.308`: This is Omega_m at z=0. This is used if Bryan-Normal virial mass is used in halo file.
           
 
 
