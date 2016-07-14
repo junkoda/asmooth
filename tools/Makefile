@@ -1,4 +1,4 @@
-EXEC = reformat2
+EXEC = reformat reformat2
 
 all: $(EXEC)
 

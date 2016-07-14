@@ -68,8 +68,9 @@ int main(int argc, char* argv[])
 	 << "\t-xv 912; -xv <local boxsize> (for xv particle format)\n"
          << "\t-nc_node_dim 32 (for zip particle format)\n"
 	 << "\t-mesh_scale 4   (for zip particle format)\n"
-         << "\t-l 0.2; FOF linking length"
-         << "\t-nc <nc1,nc2,...> list of number of mesh";
+         << "\t-l 0.2; FOF linking length\n"
+         << "\t-omegam 0.308; (for Bryan-Normal over density\n"
+         << "\t-nc <nc1,nc2,...> list of number of mesh\n";
     
     return 0;
   }
