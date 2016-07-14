@@ -44,7 +44,7 @@ static inline short endian_short(const short x)
   return temp.num;
 }
 
-static inline int endian_float(const float x)
+static inline float endian_float(const float x)
 {
   Float temp;
   char const * const p= (char const *) &x;
