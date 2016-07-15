@@ -96,7 +96,6 @@ int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
   }
 
 
-  //const float delta= 745.6046565f; // 4pi/3*178
   const float boxsize= halos->boxsize;
   int n= 0;
   float buf[halo_ndat];
@@ -123,7 +122,8 @@ int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
 
 #ifdef PID_FLAG
     // 50 8-byte integer for id and 6 4-byte floats for xv
-    fseek(fp, npid*(8+4*6), SEEK_CUR);
+    int seek_ret= fseek(fp, npid*(8+4*6), SEEK_CUR);
+    assert(seek_ret == 0);
 #endif
     
     ++n;
@@ -133,6 +133,7 @@ int read_halo_file(const char filename[], ParticleSet<Halo>* const halos,
   halos->np_local= n;
   halos->np_with_buffers= n;
 
-  return fclose(fp) == 0;
+  int fret= fclose(fp); assert(fret == 0);
+  return fret == 0;
 }
 
