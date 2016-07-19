@@ -14,7 +14,7 @@ OPTIONS  += -DHALO_EXCISE # Excise halo using given halo catalog
 
 # Options for zipped particle format
 # OPTIONS  += -DBGQ  # Running this on a big endian machine
-OPTIONS += -DSWAPENDIAN # Running this code on different endian wrt file
+# OPTIONS += -DSWAPENDIAN # Running this code on different endian wrt file
 
 # Options for halo file
 OPTIONS  += -DPID_FLAG # Halo file format with particle IDs
