@@ -105,7 +105,6 @@ int main(int argc, char* argv[])
   const int nc_node_dim= op.get_int("-nc_node_dim");
   const int mesh_scale= op.get_int("-mesh_scale");
 
-  
   assert(buffer_factor > 0.0f);
   const float ll= 2.0f * op.get_float("-l");
 
@@ -149,6 +148,9 @@ int main(int argc, char* argv[])
   deque<string> redshifts;
   if(!redshift_filename.empty()) {
     FILE* fp= fopen(redshift_filename.c_str(), "r");
+    if(fp == 0) {
+      cerr << "Error: Redshift file " << redshift_filename << " does not exist\n";
+    }
     assert(fp);
     
     char buf[128], z[32];

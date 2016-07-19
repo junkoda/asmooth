@@ -166,8 +166,9 @@ void read_pm_file_zip(const char filebase[], const char redshift[], const int in
 
   P3m_zip_header0 zip_header0;
   float zip_header1[16];
-  fread(&zip_header0, sizeof(P3m_zip_header0), 1, fp0);
-  fread(zip_header1, sizeof(float), 16, fp1);
+  int ret;
+  ret= fread(&zip_header0, sizeof(P3m_zip_header0), 1, fp0); assert(ret == 1);
+  ret= fread(zip_header1, sizeof(float), 16, fp1); assert(ret == 16);
 
   const index_t np_local= endian_int(zip_header0.np_local);
   particles->np_local= np_local;
@@ -199,12 +200,15 @@ void read_pm_file_zip(const char filebase[], const char redshift[], const int in
 
 #ifndef BGQ
 	// little endian
-	fread(rhoc_i1, 1, 1, fp2);     // little endian
+	ret= fread(rhoc_i1, 1, 1, fp2); // little endian
+	assert(ret == 1);
 #else
-	fread(rhoc_i1 + 3, 1, 1, fp2); // big endian
+	ret= fread(rhoc_i1 + 3, 1, 1, fp2); // big endian
+	assert(ret == 1);
 #endif
 	if(rr_i4 == 255) { // rr_i4 read throgh rhoc_i1
-	  fread(&rr_i4, sizeof(int), 1, fp3);
+	  ret= fread(&rr_i4, sizeof(int), 1, fp3);
+	  assert(ret == 1);
 	  rr_i4 = endian_int(rr_i4);
 	}
 	for(int l=1; l<=rr_i4; ++l) {
@@ -212,15 +216,15 @@ void read_pm_file_zip(const char filebase[], const char redshift[], const int in
 	  np_uzip++;
 
 #ifndef BGQ
-	  fread(xi1     , 1, 1, fp0);
-	  fread(xi1 +  4, 1, 1, fp0);
-	  fread(xi1 +  8, 1, 1, fp0);
+	  ret= fread(xi1     , 1, 1, fp0); assert(ret == 1);
+	  ret= fread(xi1 +  4, 1, 1, fp0); assert(ret == 1);
+	  ret= fread(xi1 +  8, 1, 1, fp0); assert(ret == 1);
 #else
-	  fread(xi1 +  3, 1, 1, fp0);
-	  fread(xi1 +  7, 1, 1, fp0);
-	  fread(xi1 + 11, 1, 1, fp0);
+	  ret= fread(xi1 +  3, 1, 1, fp0); assert(ret == 1);
+	  ret= fread(xi1 +  7, 1, 1, fp0); assert(ret == 1);
+	  ret= fread(xi1 + 11, 1, 1, fp0); assert(ret == 1);
 #endif
-	  fread(vi2, sizeof(short), 3, fp1);
+	  ret= fread(vi2, sizeof(short), 3, fp1); assert(ret == 3);
 	  vi2[0]= endian_short(vi2[0]);
 	  vi2[1]= endian_short(vi2[1]);
 	  vi2[2]= endian_short(vi2[2]);
