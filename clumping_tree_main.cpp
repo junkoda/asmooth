@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
   op.set_default("-node_dir", "results/node");
   //op.set_default("-hdir", "halo_data");
   op.set_default("-allocate", "512"); // 12M particles ~ 512MB
-  op.set_default("-xv <boxsize>", "-1");
+  op.set_default("-xv", "-1");
   op.set_default("-buffer_factor", "0.05");
   op.set_default("-nc_node_dim", "0");
   op.set_default("-l", "0.2");
