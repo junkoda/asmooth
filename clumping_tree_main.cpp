@@ -19,6 +19,7 @@ using namespace std;
 
 // Semi-global variables
 static float boxsize;
+static bool read_xv_file= false;
 
 static void for_each_redshift(const char redshift[],
 			const char filebase[],
@@ -112,6 +113,7 @@ int main(int argc, char* argv[])
   logger << "linking_length(internal) " << ll << "\n";
 
   if(boxsize <= 0.0f) {
+    read_xv_file = false;
     logger << "zip particle format\n";
     logger << "nc_node_dim " << nc_node_dim << "\n";
     logger << "mesh_scale " << mesh_scale << "\n";
@@ -121,6 +123,7 @@ int main(int argc, char* argv[])
     }
   }
   else {
+    read_xv_file = true;
     logger << "-xv option given; boxsize = " << boxsize << "\n";
   }
   
@@ -343,7 +346,7 @@ void for_each_redshift(const char redshift[],
 	   << shift[0] << " " << shift[1] << " " << shift[2] << "\n";
   }
 
-  if(boxsize > 0.0f) {
+  if(read_xv_file) {
     read_pm_file_xv(filebase, redshift, mpi->index(), buffer_factor,
 		    shift, particles);
     particles->boxsize = boxsize;
